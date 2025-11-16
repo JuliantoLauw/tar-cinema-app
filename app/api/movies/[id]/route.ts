@@ -4,15 +4,23 @@ import { NextResponse } from "next/server";
 interface Params {
   params: { id: string };
 }
-
 export async function GET(_: Request, { params }: Params) {
-  const movie = await prisma.movie.findUnique({
-    where: { id: params.id },
-  });
+  const { id } = await params;
 
-  if (!movie) return NextResponse.json({ error: "Movie not found" }, { status: 404 });
+  try {
+    const movie = await prisma.movie.findUnique({
+      where: { id: id },
+    });
+    if (!movie) {
+      return NextResponse.json({ error: "Movie not found" }, { status: 404 });
+    }
 
-  return NextResponse.json(movie);
+    return NextResponse.json(movie);
+
+  } catch (error) {
+    console.log("error: ", error);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
 }
 
 export async function PUT(request: Request, { params }: Params) {
