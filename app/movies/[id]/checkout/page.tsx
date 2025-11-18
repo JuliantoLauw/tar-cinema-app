@@ -1,294 +1,373 @@
-'use client'; // WAJIB: Menjadikan ini Client Component untuk interaktivitas
+'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation'; // Hook untuk mendapatkan [id]
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
-// Tipe data untuk Movie (sesuaikan dengan skema Prisma Anda)
 interface Movie {
   id: string;
   title: string;
-  price: number; // Asumsi Anda punya harga di model Movie
-  // tambahkan properti lain jika perlu
-}
-
-// Tipe data untuk Order Summary (dummy, karena tidak dari API)
-interface OrderSummary {
-  showtime: string;
-  seats: string[];
-  pricePerTicket: number;
-  adminFee: number;
+  genre: string;
+  duration: string;
+  rating: string;
 }
 
 export default function CheckoutPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const id = params?.id as string;
 
-  // State untuk data yang di-fetch
   const [movie, setMovie] = useState<Movie | null>(null);
   const [isLoadingMovie, setIsLoadingMovie] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Data dummy untuk ringkasan (kursi, jadwal, dll.)
-  // Anda bisa ganti ini dengan data dari context atau state management
-  const [orderSummary, setOrderSummary] = useState<OrderSummary>({
-    showtime: 'Sabtu, 12 Nov 2025, 18:30',
-    seats: ['C8', 'C9'],
-    pricePerTicket: 50000, // Harga ini bisa diambil dari movie.price
-    adminFee: 3000,
-  });
+  // Get data from URL params
+  const seatsParam = searchParams.get('seats');
+  const dateParam = searchParams.get('date');
+  const timeParam = searchParams.get('time');
+  const cinemaParam = searchParams.get('cinema');
 
-  // State untuk form interaktif
+  const selectedSeats = seatsParam ? seatsParam.split(',') : [];
+  const selectedDate = dateParam || '-';
+  const selectedTime = timeParam || '-';
+  const selectedCinema = cinemaParam || 'CGV Grand Indonesia';
+
+  // Form states
   const [voucherCode, setVoucherCode] = useState('');
-  const [voucherStatus, setVoucherStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [voucherStatus, setVoucherStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // 1. FLOW: Mengambil data detail dari API Anda
+  const pricePerTicket = 50000;
+  const adminFee = 3000;
+
   useEffect(() => {
-    if (!id) return; // Jangan fetch jika id belum siap
-    console.log(id);
+    if (!id) return;
+
     const fetchMovie = async () => {
       setIsLoadingMovie(true);
       setError(null);
       try {
         const response = await fetch(`/api/movies/${id}`);
-        console.log(response)
         if (!response.ok) {
           throw new Error('Film tidak ditemukan');
         }
         const data: Movie = await response.json();
         setMovie(data);
-        // Set harga tiket berdasarkan data film
-        setOrderSummary(prev => ({ ...prev, pricePerTicket: data.price || 50000 }));
       } catch (err) {
-        console.log(err);
-        setError("Gagal mengambil data film.");
+        setError('Gagal mengambil data film.');
       } finally {
         setIsLoadingMovie(false);
       }
     };
 
     fetchMovie();
-  }, [id]); // dependency array
+  }, [id]);
 
-  // Kalkulasi total
   const subtotal = useMemo(() => {
-    return orderSummary.pricePerTicket * orderSummary.seats.length;
-  }, [orderSummary.pricePerTicket, orderSummary.seats.length]);
+    return pricePerTicket * selectedSeats.length;
+  }, [selectedSeats.length]);
 
   const total = useMemo(() => {
-    return subtotal + orderSummary.adminFee - discount;
-  }, [subtotal, orderSummary.adminFee, discount]);
+    return subtotal + adminFee - discount;
+  }, [subtotal, adminFee, discount]);
 
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
 
-  // Handler interaktif
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
   const handleApplyVoucher = () => {
     if (voucherCode === 'HEMAT20') {
       setDiscount(subtotal * 0.2);
-      setVoucherStatus({ type: 'success', message: 'Voucher berhasil digunakan!' });
+      setVoucherStatus({ type: 'success', message: 'Voucher berhasil digunakan! Diskon 20%' });
+    } else if (voucherCode === 'DISKON10') {
+      setDiscount(subtotal * 0.1);
+      setVoucherStatus({ type: 'success', message: 'Voucher berhasil digunakan! Diskon 10%' });
     } else {
       setDiscount(0);
       setVoucherStatus({ type: 'error', message: 'Kode voucher tidak valid.' });
     }
   };
 
-  // 3. FLOW: Mengirim data ke API checkout (dummy)
   const handlePayment = async () => {
     setIsProcessing(true);
     setVoucherStatus(null);
 
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          movieId: movie?.id,
-          showtime: orderSummary.showtime,
-          seats: orderSummary.seats,
-          total,
-          paymentMethod,
-        }),
-      });
-
-      if (response.ok) {
-        setShowSuccessModal(true);
-      } else {
-        const result = await response.json();
-        setVoucherStatus({ type: 'error', message: result.error || 'Pembayaran gagal.' });
-      }
-    } catch (error) {
-      setVoucherStatus({ type: 'error', message: 'Tidak dapat terhubung ke server.' });
-    } finally {
+    // Simulate payment process
+    setTimeout(() => {
       setIsProcessing(false);
-    }
+      setShowSuccessModal(true);
+    }, 2000);
   };
 
   const handleCloseModal = () => {
-    window.location.href = '/'; // Kembali ke Home
+    router.push('/');
   };
-
-  // --- Render ---
 
   if (isLoadingMovie) {
     return (
       <main className="container my-5 text-center">
-        <div className="spinner-border text-primary" role="status">
+        <div className="spinner-border text-warning" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="mt-2">Memuat data film...</p>
+        <p className="mt-2 text-light">Memuat data...</p>
       </main>
     );
   }
 
-  if (error) {
+  if (error || !movie) {
     return (
       <main className="container my-5">
         <div className="alert alert-danger">
-          <strong>Error:</strong> {error}
+          <strong>Error:</strong> {error || 'Film tidak ditemukan'}
         </div>
       </main>
     );
   }
 
-  if (!movie) {
-    return (
-      <main className="container my-5">
-        <div className="alert alert-warning">Film tidak ditemukan.</div>
-      </main>
-    );
-  }
-
-  // 2. FLOW: Menampilkan data di checkout.tsx
   return (
     <>
-      <main className="container my-5">
-        <h2 className="mb-4">Checkout Pesanan - {movie.title}</h2>
+      <main className="container my-4">
+        <h2 className="mb-4 text-warning text-center">Checkout Pesanan</h2>
 
-        <div className="row g-5">
-          <div className="col-md-7">
-            <h3>Ringkasan Pesanan</h3>
-            <div className="card shadow-sm mb-4">
+        <div className="row g-4">
+          {/* Left Column - Order Summary */}
+          <div className="col-lg-7">
+            <div className="card bg-dark border-secondary mb-4">
               <div className="card-body">
-                <ul className="list-group list-group-flush">
-                  <li className="list-group-item d-flex justify-content-between">
-                    <span>Film</span>
-                    <strong>{movie.title}</strong>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between">
-                    <span>Jadwal</span>
-                    <strong>{orderSummary.showtime}</strong>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between">
-                    <span>Kursi</span>
-                    <strong>{orderSummary.seats.join(', ')}</strong>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between">
-                    <span>Harga Tiket ({orderSummary.seats.length}x)</span>
-                    <span>{formatCurrency(orderSummary.pricePerTicket)}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between">
-                    <span>Biaya Admin</span>
-                    <span>{formatCurrency(orderSummary.adminFee)}</span>
-                  </li>
-                  {discount > 0 && (
-                    <li className="list-group-item d-flex justify-content-between text-success">
-                      <span>Diskon Voucher</span>
-                      <strong>- {formatCurrency(discount)}</strong>
-                    </li>
-                  )}
-                  <li className="list-group-item d-flex justify-content-between fs-5 bg-light">
-                    <strong>Total</strong>
-                    <strong>{formatCurrency(total)}</strong>
-                  </li>
-                </ul>
+                <h5 className="text-warning mb-3">Ringkasan Pesanan</h5>
+                
+                <table className="table table-dark table-borderless">
+                  <tbody>
+                    <tr>
+                      <td className="text-light">Film</td>
+                      <td className="text-end text-light fw-bold">{movie.title}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-light">Bioskop</td>
+                      <td className="text-end text-light">{selectedCinema}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-light">Tanggal</td>
+                      <td className="text-end text-light">{formatDate(selectedDate)}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-light">Jam</td>
+                      <td className="text-end text-light">{selectedTime} WIB</td>
+                    </tr>
+                    <tr>
+                      <td className="text-light">Kursi</td>
+                      <td className="text-end">
+                        <span className="badge bg-warning text-dark">
+                          {selectedSeats.join(', ')}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <hr className="border-secondary" />
+
+                <table className="table table-dark table-borderless">
+                  <tbody>
+                    <tr>
+                      <td className="text-light">
+                        Harga Tiket ({selectedSeats.length}x)
+                      </td>
+                      <td className="text-end text-light">{formatCurrency(pricePerTicket)}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-light">Subtotal</td>
+                      <td className="text-end text-light">{formatCurrency(subtotal)}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-light">Biaya Admin</td>
+                      <td className="text-end text-light">{formatCurrency(adminFee)}</td>
+                    </tr>
+                    {discount > 0 && (
+                      <tr>
+                        <td className="text-success">Diskon Voucher</td>
+                        <td className="text-end text-success fw-bold">
+                          - {formatCurrency(discount)}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+
+                <hr className="border-secondary" />
+
+                <div className="d-flex justify-content-between align-items-center">
+                  <span className="text-light fs-5 fw-bold">Total Bayar</span>
+                  <span className="text-warning fs-4 fw-bold">
+                    {formatCurrency(total)}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <h3>Kode Voucher</h3>
-            <div className="card shadow-sm">
+            {/* Voucher Section */}
+            <div className="card bg-dark border-secondary">
               <div className="card-body">
-                <div className="input-group">
+                <h5 className="text-warning mb-3">Kode Voucher</h5>
+                <div className="input-group mb-2">
                   <input
                     type="text"
-                    id="voucher-code"
-                    className={`form-control ${voucherStatus ? (voucherStatus.type === 'success' ? 'is-valid' : 'is-invalid') : ''}`}
+                    className={`form-control bg-secondary text-light border-0 ${
+                      voucherStatus
+                        ? voucherStatus.type === 'success'
+                          ? 'is-valid'
+                          : 'is-invalid'
+                        : ''
+                    }`}
                     placeholder="Masukkan kode voucher"
                     value={voucherCode}
                     onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                     disabled={isProcessing}
                   />
                   <button
-                    id="apply-voucher-btn"
-                    className="btn btn-outline-secondary"
+                    className="btn btn-warning"
                     onClick={handleApplyVoucher}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !voucherCode}
                   >
                     Gunakan
                   </button>
                 </div>
                 {voucherStatus && (
-                  <p id="voucher-status" className={`mt-2 ${voucherStatus.type === 'success' ? 'text-success' : 'text-danger'}`}>
+                  <small
+                    className={`${
+                      voucherStatus.type === 'success' ? 'text-success' : 'text-danger'
+                    }`}
+                  >
                     {voucherStatus.message}
-                  </p>
+                  </small>
                 )}
+                <small className="text-muted d-block mt-2">
+                  Coba: HEMAT20 atau DISKON10
+                </small>
               </div>
             </div>
           </div>
 
-          <div className="col-md-5">
-            <h3>Metode Pembayaran</h3>
-            <div className="card shadow-sm">
+          {/* Right Column - Payment Method */}
+          <div className="col-lg-5">
+            <div className="card bg-dark border-secondary mb-4">
               <div className="card-body">
-                <div className="form-check fs-5 mb-3">
-                  <input type="radio" id="credit-card" name="payment" value="credit-card" className="form-check-input" checked={paymentMethod === 'credit-card'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                  <label htmlFor="credit-card" className="form-check-label">Kartu Kredit / Debit</label>
+                <h5 className="text-warning mb-3">Metode Pembayaran</h5>
+
+                <div className="form-check mb-3 p-3 border border-secondary rounded">
+                  <input
+                    type="radio"
+                    id="credit-card"
+                    name="payment"
+                    value="credit-card"
+                    className="form-check-input"
+                    checked={paymentMethod === 'credit-card'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <label htmlFor="credit-card" className="form-check-label text-light w-100">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-credit-card fs-4 me-2"></i>
+                      <span>Kartu Kredit / Debit</span>
+                    </div>
+                  </label>
                 </div>
-                <div className="form-check fs-5 mb-3">
-                  <input type="radio" id="bank-transfer" name="payment" value="bank-transfer" className="form-check-input" checked={paymentMethod === 'bank-transfer'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                  <label htmlFor="bank-transfer" className="form-check-label">Transfer Bank</label>
+
+                <div className="form-check mb-3 p-3 border border-secondary rounded">
+                  <input
+                    type="radio"
+                    id="bank-transfer"
+                    name="payment"
+                    value="bank-transfer"
+                    className="form-check-input"
+                    checked={paymentMethod === 'bank-transfer'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <label htmlFor="bank-transfer" className="form-check-label text-light w-100">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-bank fs-4 me-2"></i>
+                      <span>Transfer Bank</span>
+                    </div>
+                  </label>
                 </div>
-                <div className="form-check fs-5">
-                  <input type="radio" id="e-wallet" name="payment" value="e-wallet" className="form-check-input" checked={paymentMethod === 'e-wallet'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                  <label htmlFor="e-wallet" className="form-check-label">E-Wallet (GoPay, OVO, DANA)</label>
+
+                <div className="form-check mb-3 p-3 border border-secondary rounded">
+                  <input
+                    type="radio"
+                    id="e-wallet"
+                    name="payment"
+                    value="e-wallet"
+                    className="form-check-input"
+                    checked={paymentMethod === 'e-wallet'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <label htmlFor="e-wallet" className="form-check-label text-light w-100">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-wallet2 fs-4 me-2"></i>
+                      <span>E-Wallet (GoPay, OVO, DANA)</span>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
 
-            <div className="d-grid mt-4">
-              <button
-                id="pay-btn"
-                className="btn btn-primary btn-lg"
-                onClick={handlePayment}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                    <span className="ms-2">Memproses...</span>
-                  </>
-                ) : (
-                  `Bayar Sekarang (${formatCurrency(total)})`
-                )}
-              </button>
-            </div>
+            <button
+              className="btn btn-warning w-100 btn-lg fw-bold"
+              onClick={handlePayment}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Memproses...
+                </>
+              ) : (
+                <>Bayar Sekarang</>
+              )}
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Modal Sukses */}
+      {/* Success Modal */}
       {showSuccessModal && (
         <>
-          <div className="modal fade show" style={{ display: 'block' }} aria-modal="true" role="dialog">
+          <div
+            className="modal fade show"
+            style={{ display: 'block' }}
+            aria-modal="true"
+            role="dialog"
+          >
             <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content text-center">
-                <div className="modal-body p-5">
-                  <span className="display-1">✅</span>
-                  <h3 className="mt-3">Pembayaran Berhasil!</h3>
-                  <p className="lead text-muted">Tiket Anda telah dikonfirmasi.</p>
-                  <button type="button" className="btn btn-primary btn-lg mt-3" onClick={handleCloseModal}>
+              <div className="modal-content bg-dark border-warning">
+                <div className="modal-body text-center p-5">
+                  <div className="mb-4">
+                    <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '80px' }}></i>
+                  </div>
+                  <h3 className="text-warning mb-3">Pembayaran Berhasil!</h3>
+                  <p className="text-light mb-4">
+                    Tiket Anda telah dikonfirmasi dan dikirim ke email.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-warning btn-lg px-5"
+                    onClick={handleCloseModal}
+                  >
                     Kembali ke Home
                   </button>
                 </div>

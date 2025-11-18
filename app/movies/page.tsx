@@ -1,63 +1,58 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Movie } from "@prisma/client";
 
-type MovieCardProps = {
-  movie: Movie;
-};
+export default async function MovieDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-function MovieCard({ movie }: MovieCardProps) {
+  const movie = await prisma.movie.findUnique({
+    where: { id },
+  });
+
+  if (!movie) return <p>Film tidak ditemukan.</p>;
+
   return (
-    <div className="col-md-3 mb-4">
-      <div className="card bg-dark text-light h-100">
-        <Link href={`/movies/${movie.id}`}>
-          <img
-            src={movie.poster}
-            className="card-img-top"
-            alt={movie.title}
-          />
+    <div className="row mt-4">
+      <div className="col-md-4">
+        <img src={`/${movie.poster}`} className="img-fluid rounded" alt={movie.title} />
+      </div>
+
+      <div className="col-md-8">
+        <h2 className="text-warning">{movie.title}</h2>
+        <p className="mb-3">
+          <span className="badge bg-secondary me-2">{movie.genre}</span>
+          <span className="badge bg-secondary me-2">{movie.rating}</span>
+          <span className="badge bg-secondary">{movie.duration}</span>
+        </p>
+        
+        <h5 className="text-warning mt-4">Sinopsis</h5>
+        <p className="text-light">{movie.synopsis}</p>
+
+        <h5 className="text-warning mt-4">Sutradara</h5>
+        <p className="text-light">{movie.director}</p>
+
+        <h5 className="text-warning mt-4">Aktor</h5>
+        <p className="text-light">{movie.actors}</p>
+
+        <h5 className="text-warning mt-4">Trailer</h5>
+        {movie.trailer ? (
+          <div className="ratio ratio-16x9 mb-4">
+            <iframe 
+              src={movie.trailer} 
+              allowFullScreen
+              title={`${movie.title} Trailer`}
+            ></iframe>
+          </div>
+        ) : (
+          <p className="text-muted">Tidak ada trailer</p>
+        )}
+
+        <Link 
+          href={`/seat-selection?movie=${id}`} 
+          className="btn btn-warning btn-lg mt-3 px-5"
+        >
+          <i className="bi bi-ticket-perforated me-2"></i>
+          Beli Tiket
         </Link>
-        <div className="card-body">
-          <h5 className="card-title">{movie.title}</h5>
-          <p className="text-secondary">
-            {movie.genre} • {movie.rating}
-          </p>
-          {movie.trailer && (
-            <a
-              href={movie.trailer}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-sm btn-outline-light"
-            >
-              Watch Trailer
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default async function Home() {
-  const movies = await prisma.movie.findMany();
-
-  const nowPlaying = movies.slice(0, 2);
-  const comingSoon = movies.slice(2);
-
-  return (
-    <div className="container mt-4">
-      <h2>Now Playing</h2>
-      <div className="row">
-        {nowPlaying.map((m) => (
-          <MovieCard key={m.id} movie={m} />
-        ))}
-      </div>
-
-      <h2 className="mt-5">Coming Soon</h2>
-      <div className="row">
-        {comingSoon.map((m) => (
-          <MovieCard key={m.id} movie={m} />
-        ))}
       </div>
     </div>
   );
