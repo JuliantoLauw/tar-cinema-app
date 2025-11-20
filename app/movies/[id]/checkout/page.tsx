@@ -39,6 +39,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [bookingCodeResult, setBookingCodeResult] = useState('');
 
   const pricePerTicket = 50000;
   const adminFee = 3000;
@@ -108,15 +109,38 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     setVoucherStatus(null);
 
-    // Simulate payment process
-    setTimeout(() => {
-      setIsProcessing(false);
-      setShowSuccessModal(true);
-    }, 2000);
+    try {
+        const orderData = {
+            movieTitle: movie?.title || "Unknown Movie",
+            cinema: selectedCinema,
+            showtime: `${formatDate(selectedDate)} - ${selectedTime}`,
+            seats: selectedSeats.join(', '),
+            totalPrice: total
+        };
+
+        const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+
+        if (!response.ok) throw new Error("Gagal memproses pembayaran");
+
+        const result = await response.json();
+        setBookingCodeResult(result.bookingCode);
+
+        setShowSuccessModal(true);
+
+    } catch (err) {
+        console.error(err);
+        alert("Terjadi kesalahan saat memproses pembayaran.");
+    } finally {
+        setIsProcessing(false);
+    }
   };
 
   const handleCloseModal = () => {
-    router.push('/');
+    router.push('/history');
   };
 
   if (isLoadingMovie) {
@@ -142,7 +166,7 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <main className="container my-4">
+      {/* <main className="container my-4"> */}
         <h2 className="mb-4 text-warning text-center">Checkout Pesanan</h2>
 
         <div className="row g-4">
@@ -151,7 +175,7 @@ export default function CheckoutPage() {
             <div className="card bg-dark border-secondary mb-4">
               <div className="card-body">
                 <h5 className="text-warning mb-3">Ringkasan Pesanan</h5>
-                
+
                 <table className="table table-dark table-borderless">
                   <tbody>
                     <tr>
@@ -342,7 +366,7 @@ export default function CheckoutPage() {
             </button>
           </div>
         </div>
-      </main>
+      {/* </main> */}
 
       {/* Success Modal */}
       {showSuccessModal && (
@@ -361,14 +385,14 @@ export default function CheckoutPage() {
                   </div>
                   <h3 className="text-warning mb-3">Pembayaran Berhasil!</h3>
                   <p className="text-light mb-4">
-                    Tiket Anda telah dikonfirmasi dan dikirim ke email.
+                    Tiket berhasil dibuat! Kode Booking: <strong className="text-warning">{bookingCodeResult}</strong>
                   </p>
                   <button
                     type="button"
                     className="btn btn-warning btn-lg px-5"
                     onClick={handleCloseModal}
                   >
-                    Kembali ke Home
+                    Lihat Riwayat
                   </button>
                 </div>
               </div>

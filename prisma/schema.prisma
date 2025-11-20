@@ -19,3 +19,15 @@ model Movie {
   actors    String
   trailer   String?
 }
+
+model Order {
+  id          String   @id @default(cuid())
+  bookingCode String   @unique
+  movieTitle  String
+  cinema      String
+  showtime    String   // Contoh: "Senin, 20 Nov 2025 - 19:00"
+  seats       String   // Disimpan sebagai text, misal: "A1, A2"
+  totalPrice  Float
+  status      String   @default("Berhasil")
+  createdAt   DateTime @default(now())
+}

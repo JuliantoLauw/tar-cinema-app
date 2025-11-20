@@ -8,7 +8,7 @@ export default function Navbar() {
 
       <div>
         <Link href="/" className="me-3 text-light">Home</Link>
-        <Link href="/movies" className="me-3 text-light">Film</Link>
+        <Link href="/history" className="me-3 text-light">Riwayat</Link>
         <Link href="/chat" className="text-light">Layanan</Link>
       </div>
     </nav>
