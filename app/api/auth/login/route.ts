@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
+    // BUAT RESPONSE DAN SET COOKIE
+    const response = NextResponse.json(
       {
         message: "Login berhasil",
         user: {
@@ -42,6 +43,21 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
+
+    // SET COOKIE 'user'
+    response.cookies.set('user', JSON.stringify({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 hari
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

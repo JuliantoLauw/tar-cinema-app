@@ -6,7 +6,17 @@ const authRoutes = ['/login', '/register'];
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const user = request.cookies.get('user');
+  const userCookie = request.cookies.get('user');
+
+  // Parse user data dari cookie
+  let user = null;
+  try {
+    if (userCookie?.value) {
+      user = JSON.parse(userCookie.value);
+    }
+  } catch (error) {
+    console.error('Error parsing user cookie:', error);
+  }
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
@@ -28,13 +38,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
   ],
 };

@@ -12,7 +12,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -23,17 +23,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const storedUser = localStorage.getItem('user');
-    try {
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    const checkAuth = async () => {
+      try {
+        // Cek apakah user ada di cookie dengan memanggil API
+        const response = await fetch('/api/auth/me', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData.user);
+          localStorage.setItem('user', JSON.stringify(userData.user));
+        } else {
+          setUser(null);
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setUser(null);
+        localStorage.removeItem('user');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error parsing stored user:', error);
-      localStorage.removeItem('user');
-    }
-    setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = (userData: User) => {
@@ -41,9 +56,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async (): Promise<void> => {
+    try {
+      // Panggil API logout untuk hapus cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      // Clear client state
+      setUser(null);
+      localStorage.removeItem('user');
+      
+      // Force refresh untuk clear cache
+      window.location.href = '/';
+      window.location.reload();
+    }
   };
 
   return (
