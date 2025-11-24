@@ -2,6 +2,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 import Navbar from "./navbar";
 import Footer from "./footer";
+import { AuthProvider } from "./providers/AuthProvider";
 
 export const metadata = { title: "TARCinema" };
 
@@ -15,9 +16,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-dark text-light">
-        <Navbar />
-        <main className="container py-4">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          <main className="container py-4">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

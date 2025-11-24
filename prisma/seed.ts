@@ -1,6 +1,36 @@
 import { prisma } from "../lib/prisma";
 
 async function main() {
+  // Seed Demo Users
+  const demoUsers = [
+    {
+      name: "John Doe",
+      email: "john@example.com",
+      password: "Password123", // TODO: Hash this in production
+    },
+    {
+      name: "Jane Smith",
+      email: "jane@example.com",
+      password: "SecurePass456", // TODO: Hash this in production
+    },
+  ];
+
+  for (const user of demoUsers) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: user.email },
+    });
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: user,
+      });
+      console.log(`User ${user.email} berhasil dibuat`);
+    } else {
+      console.log(`User ${user.email} sudah ada`);
+    }
+  }
+
+  // Seed Demo Movies
   const demoMovies = [
     { 
       title: 'Kimetsu no Yaiba', 
@@ -37,13 +67,17 @@ async function main() {
     },
   ];
 
-  const created = await prisma.movie.createMany({
-    data: demoMovies,
-  });
+  try {
+    const created = await prisma.movie.createMany({
+      data: demoMovies,
+    });
 
-  console.log("Total movie berhasil ditambahkan:", created.count);
+    console.log("Total movie berhasil ditambahkan:", created.count);
+  } catch (e) {
+    console.log("Movies sudah ada atau error saat insert");
+  }
 }
 
 main()
   .catch((e) => console.error(e))
-  .finally(() => prisma.$disconnect());
+  .finally(async () => await prisma.$disconnect());
