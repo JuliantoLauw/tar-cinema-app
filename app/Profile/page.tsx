@@ -14,7 +14,7 @@ export default function ProfilePage() {
 
   if (!user) return <p className="text-center mt-5">Harap login dahulu.</p>;
 
-  // Update profil (nama/email/photo)
+  
   const updateProfile = async () => {
     const res = await fetch("/api/user/update", {
       method: "POST",
@@ -26,7 +26,7 @@ export default function ProfilePage() {
     if (res.ok) login(data.user);
   };
 
-  // Ganti password
+  
   const changePassword = async () => {
     const res = await fetch("/api/user/update-password", {
       method: "POST",
@@ -42,7 +42,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Upload foto profil
+  
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
@@ -84,7 +84,7 @@ export default function ProfilePage() {
         marginBottom: "15px"
       }}>{message}</div>}
 
-      {/* Foto Profil */}
+      
       <div style={{ marginBottom: "20px" }}>
         <img
           src={photoUrl || "/default-avatar.png"}
@@ -113,13 +113,13 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* Info Nama & Email */}
+     
       <div className="info" style={{ marginBottom: "20px", textAlign: "left" }}>
         <p><strong>Nama:</strong> {name}</p>
         <p><strong>Email:</strong> {email}</p>
       </div>
 
-      {/* Form Update Profil */}
+     
       <form onSubmit={(e) => { e.preventDefault(); updateProfile(); }} style={{ textAlign: "left" }}>
         <label>Nama Baru</label>
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: "100%", padding: "8px", margin: "5px 0 15px", borderRadius: "5px" }} />
@@ -142,7 +142,7 @@ export default function ProfilePage() {
         </button>
       </form>
 
-      {/* Form Ganti Password */}
+      
       <div style={{ marginTop: "20px", textAlign: "left" }}>
         <label>Password Lama</label>
         <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} style={{ width: "100%", padding: "8px", margin: "5px 0", borderRadius: "5px" }} />

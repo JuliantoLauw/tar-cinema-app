@@ -11,7 +11,7 @@ export const POST = async (req: Request) => {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // Simpan di folder public/uploads
+
   const uploadsDir = path.join(process.cwd(), "public", "uploads");
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });

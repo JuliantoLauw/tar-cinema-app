@@ -7,7 +7,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  photoUrl: string;   // ⬅ WAJIB!
+  photoUrl: string;   
 }
 
 interface AuthContextType {
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Cek apakah user ada di cookie dengan memanggil API
+        
         const response = await fetch('/api/auth/me', {
           method: 'GET',
           credentials: 'include',
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async (): Promise<void> => {
     try {
-      // Panggil API logout untuk hapus cookie
+      
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
@@ -67,11 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
-      // Clear client state
+     
       setUser(null);
       localStorage.removeItem('user');
       
-      // Force refresh untuk clear cache
+    
       window.location.href = '/';
       window.location.reload();
     }

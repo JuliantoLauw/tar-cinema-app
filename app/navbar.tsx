@@ -39,7 +39,7 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 style={{ cursor: "pointer" }}
               >
-                {/* Foto Profil */}
+                
                 <img
                   src={user.photoUrl || "/default-avatar.png"}
                   alt="profile"
@@ -64,7 +64,7 @@ export default function Navbar() {
                     zIndex: 1000,
                   }}
                 >
-                  {/* EMAIL USER */}
+                  
                   <div
                     style={{
                       padding: "8px 16px",
@@ -76,7 +76,7 @@ export default function Navbar() {
                     {user.email}
                   </div>
 
-                  {/* LINK PROFILE */}
+                  
                   <Link
                     href="/Profile"
                     style={{
@@ -91,7 +91,7 @@ export default function Navbar() {
                     Profile
                   </Link>
 
-                  {/* LOGOUT */}
+                  
                   <button
                     onClick={handleLogout}
                     style={{
