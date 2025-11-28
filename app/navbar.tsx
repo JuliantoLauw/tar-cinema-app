@@ -19,39 +19,79 @@ export default function Navbar() {
       <h1 className="navbar-brand text-warning">TARCinema</h1>
 
       <div className="d-flex align-items-center gap-3">
-        <Link href="/" className="text-light" style={{ textDecoration: "none" }}>Home</Link>
+        <Link href="/" className="text-light" style={{ textDecoration: "none" }}>
+          Home
+        </Link>
+
         {user ? (
           <>
-            <Link href="/history" className="text-light" style={{ textDecoration: "none" }}>Riwayat</Link>
-            <Link href="/chat" className="text-light" style={{ textDecoration: "none" }}>Layanan</Link>
-            
+            <Link href="/history" className="text-light" style={{ textDecoration: "none" }}>
+              Riwayat
+            </Link>
+
+            <Link href="/chat" className="text-light" style={{ textDecoration: "none" }}>
+              Layanan
+            </Link>
+
             <div className="dropdown" style={{ position: "relative" }}>
               <button
-                className="btn btn-sm btn-outline-warning"
+                className="btn btn-sm btn-outline-warning d-flex align-items-center gap-2"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 style={{ cursor: "pointer" }}
               >
+                {/* Foto Profil */}
+                <img
+                  src={user.photoUrl || "/default-avatar.png"}
+                  alt="profile"
+                  className="rounded-circle"
+                  width={30}
+                  height={30}
+                />
                 {user.name}
               </button>
+
               {dropdownOpen && (
-                <div className="dropdown-menu show" style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "100%",
-                  backgroundColor: "#1b1b1b",
-                  border: "1px solid #ffb84c",
-                  borderRadius: "4px",
-                  minWidth: "150px",
-                  zIndex: 1000,
-                }}>
-                  <div style={{
-                    padding: "8px 16px",
-                    color: "#b6b6b6",
-                    fontSize: "12px",
-                    borderBottom: "1px solid #333"
-                  }}>
+                <div
+                  className="dropdown-menu show"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    backgroundColor: "#1b1b1b",
+                    border: "1px solid #ffb84c",
+                    borderRadius: "4px",
+                    minWidth: "170px",
+                    zIndex: 1000,
+                  }}
+                >
+                  {/* EMAIL USER */}
+                  <div
+                    style={{
+                      padding: "8px 16px",
+                      color: "#b6b6b6",
+                      fontSize: "12px",
+                      borderBottom: "1px solid #333",
+                    }}
+                  >
                     {user.email}
                   </div>
+
+                  {/* LINK PROFILE */}
+                  <Link
+                    href="/Profile"
+                    style={{
+                      display: "block",
+                      padding: "8px 16px",
+                      color: "white",
+                      textDecoration: "none",
+                      backgroundColor: "transparent",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Profile
+                  </Link>
+
+                  {/* LOGOUT */}
                   <button
                     onClick={handleLogout}
                     style={{
@@ -60,10 +100,9 @@ export default function Navbar() {
                       backgroundColor: "#dc3545",
                       color: "white",
                       border: "none",
-                      borderRadius: "0",
                       cursor: "pointer",
                       fontSize: "14px",
-                      textAlign: "left"
+                      textAlign: "left",
                     }}
                   >
                     Logout
@@ -73,9 +112,9 @@ export default function Navbar() {
             </div>
           </>
         ) : (
-          <>
-            <Link href="/login" className="btn btn-sm btn-warning" style={{ textDecoration: "none" }}>Login</Link>
-          </>
+          <Link href="/login" className="btn btn-sm btn-warning" style={{ textDecoration: "none" }}>
+            Login
+          </Link>
         )}
       </div>
     </nav>

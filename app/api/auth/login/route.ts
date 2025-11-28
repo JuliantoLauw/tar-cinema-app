@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
           id: user.id,
           name: user.name,
           email: user.email,
+          photoUrl: user.photoUrl ?? ""
         },
       },
       { status: 200 }
