@@ -20,6 +20,15 @@ model Movie {
   trailer   String?
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  photoUrl  String? @default("")
+  createdAt DateTime @default(now())
+}
+
 model Order {
   id          String   @id @default(cuid())
   bookingCode String   @unique
